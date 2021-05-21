@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+	<sub-flow name="Logger-sub-flow" doc:id="e5ad6d18-ae79-4042-bcc7-5b155bc550e7" >
+		<logger level="INFO" doc:name="Logger" doc:id="2ad8df4d-9a25-4b68-9384-dbaebb227a00" message="error details #[payload]"/>
+	</sub-flow>
+	<error-handler name="common_error_handler" doc:id="09c41232-dde8-4169-8a94-ea16231b6a74" >
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="a3a18748-7169-4fd0-a43f-edf9451ae866" type="HTTP:BAD_REQUEST">
+				<set-variable value="400" doc:name="Set Variable" doc:id="069c0673-8248-4154-a62a-1ec343ee42ba" variableName="httpStatus"/>
+				<ee:transform doc:name="Transform Message" doc:id="77db3b61-dda2-4921-83e4-bcba827b4ea0" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "errorCode": vars.httpStatus,
+  "errorMessage": "Invalid request message",
+  "transactionId": "dd960082-abbf-47c2-8c65-f18eeb35848b",
+  "timeStamp": now()
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			<flow-ref doc:name="logger-Flow" doc:id="af1a0f1a-4d19-47fd-9a65-9e2849d99bef" name="Logger-sub-flow"/>
+			
+</on-error-continue>
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="e2430280-059f-497a-8fa8-1722b17b0b29" type="HTTP:NOT_FOUND">
+				<set-variable value="404" doc:name="Set Variable" doc:id="4186cb9c-34d9-4514-8d84-5f715fac7ef2" variableName="httpStatus"/>
+				<ee:transform doc:name="Transform Message" doc:id="79670841-0423-433b-92b8-2dd26d6612d8" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "errorCode": vars.httpStatus,
+  "errorMessage": "Requested resource was not found",
+  "transactionId": "dd960082-abbf-47c2-8c65-f18eeb35848b",
+  "timeStamp": now()
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			<flow-ref doc:name="Flow Reference" doc:id="6b8f4d4d-c4d0-4885-be0b-ef1b29f4c270" name="Logger-sub-flow"/>
+			
+</on-error-continue>
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="f8b0a8c4-e632-472d-8f0f-fc97c56573c4" type="HTTP:METHOD_NOT_ALLOWED">
+				<set-variable value="405" doc:name="Set Variable" doc:id="2c5d44ed-38a1-4630-8f47-c1180a228b78" variableName="httpStatus"/>
+				<ee:transform doc:name="Transform Message" doc:id="7988486c-d360-4b49-9f98-37fe134f68d5" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "errorCode": vars.httpStatus,
+  "errorMessage": "The target resource does not support the requested method",
+  "transactionId": "dd960082-abbf-47c2-8c65-f18eeb35848b",
+  "timeStamp": now()
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			<flow-ref doc:name="Flow Reference" doc:id="ce27e557-0c7d-443d-a0af-1d7d19813032" name="Logger-sub-flow"/>
+			
+</on-error-continue>
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="daebde78-bf7a-4a22-9bfb-cddc6e12c6e2" type="HTTP:NOT_ACCEPTABLE">
+				<set-variable value="406" doc:name="Set Variable" doc:id="cfe6008c-05f2-4124-acba-13a074b3e2b1" variableName="httpStatus"/>
+				<ee:transform doc:name="Transform Message" doc:id="3d5994e9-7e08-433d-91c3-84be2c492552" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{  
+  "errorCode": vars.httpStatus,
+  "errorMessage": "The requested resource cannot generate acceptable content according to the Accept headers sent in the request.",
+  "transactionId": "dd960082-abbf-47c2-8c65-f18eeb35848b",
+  "timeStamp": now()
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			<flow-ref doc:name="Flow Reference" doc:id="8937366b-0dc4-42c6-a405-ade0c495aa12" name="Logger-sub-flow"/>
+			
+</on-error-continue>
+		<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="cf1096f2-40c7-401a-9f10-23a731b9a0da" type="HTTP:SERVICE_UNAVAILABLE">
+			<set-variable value="503" doc:name="Set Variable" doc:id="2f5ce22a-a333-45ab-b725-264ab1585c64" variableName="httpStatus" />
+			<ee:transform doc:name="Transform Message" doc:id="1672d231-165b-4aa6-a033-dfe621d6c9a6">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+  "errorCode": vars.httpStatus,
+  "errorMessage": "Not Implemented",
+  "transactionId": "dd960082-abbf-47c2-8c65-f18eeb35848b",
+  "timeStamp": now()
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			<flow-ref doc:name="Flow Reference" doc:id="1caab168-4e50-459a-9d0c-fa2a497bf843" name="Logger-sub-flow"/>
+		</on-error-continue>
+		<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="e57f45bd-99ec-48e8-b823-23f92b22b905" type="HTTP:INTERNAL_SERVER_ERROR">
+			<set-variable value="500" doc:name="Set Variable" doc:id="479eb493-a7a2-4fbe-b215-941f3ae97825" variableName="httpStatus" />
+			<ee:transform doc:name="Transform Message" doc:id="4c4a0ea0-dd16-40e4-92ec-ee417908b489">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "errorCode": vars.httpStatus,
+  "errorMessage": "The server was unable to process the request due to an internal error",
+  "transactionId": "dd960082-abbf-47c2-8c65-f18eeb35848b",
+  "timeStamp": now()
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			<flow-ref doc:name="Flow Reference" doc:id="3d3569a9-839e-4ed5-a396-a6ed5d86432d" name="Logger-sub-flow"/>
+		</on-error-continue>
+		<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="7ddad071-af3f-45a1-a4ee-f21a94055653" type="HTTP:UNSUPPORTED_MEDIA_TYPE">
+			<set-variable value="415" doc:name="Set Variable" doc:id="a5c91271-623b-4908-933b-1ade4dbed8a0" variableName="httpStatus" />
+			<ee:transform doc:name="Transform Message" doc:id="df9ef005-caee-4c2f-b09f-5593581940dc">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "errorCode": vars.httpStatus,
+  "errorMessage": "The server is refusing to the request because it is not in a format supported by the target resource.",
+  "transactionId": "dd960082-abbf-47c2-8c65-f18eeb35848b",
+  "timeStamp": now()
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			<flow-ref doc:name="Flow Reference" doc:id="9d029b79-7f6c-4b90-b8fa-7b97652b7306" name="Logger-sub-flow"/>
+		</on-error-continue>
+		<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="0bfd60e0-a18c-4013-be9c-4dc56d7413fc" type="ANY">
+			<set-variable value="500" doc:name="Set Variable" doc:id="88cfd969-a2ee-4334-831f-a517d8a0f2a0" variableName="httpStatus"/>
+			<ee:transform doc:name="Transform Message" doc:id="05890ea0-02b6-4fa8-9284-332f24f26ce1" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "errorCode": vars.httpStatus,
+  "errorMessage": "Internal error occured, Please contact adminstrator.",
+  "transactionId": "dd960082-abbf-47c2-8c65-f18eeb35848b",
+  "timeStamp": now()
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<flow-ref doc:name="Flow Reference" doc:id="38912c58-2bd5-47cc-a3ba-cf08257cd1e5" name="Logger-sub-flow"/>
+		</on-error-continue>
+		
+		
+</error-handler>
+	
+</mule>

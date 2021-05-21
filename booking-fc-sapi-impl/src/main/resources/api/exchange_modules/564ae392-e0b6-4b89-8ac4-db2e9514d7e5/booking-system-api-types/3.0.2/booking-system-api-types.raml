@@ -1,0 +1,55 @@
+#%RAML 1.0 Library
+usage: Provides a collection of common resources, traits and types for use in API Specifications
+
+
+securitySchemes:
+  BasicAuth:
+    type: Basic Authentication
+    displayName: basic-auth
+    description: This API supports Basic Authentication through standard headers
+
+traits:
+  ErrorResponses: !include  system-api-types/traits/ErrorResponsesTrait.raml
+
+types:
+  locationdataType:
+    type: object
+    properties:
+     locationCode: string
+     locationDesc?: string
+
+  routeRequestType:
+    type: object
+    properties:
+      originLocationCode: string
+      destinationLocationCode: string
+  routeResponseType:
+    type: array
+    items:
+      type: routeScheduleRequestType
+    example:
+      !include system-api-types/examples/routeResponse.raml
+
+  scheduleType:
+    type: object
+    properties:
+      availableSeats : integer
+      departureDateTime : datetime
+      travelRoute: routeScheduleRequestType
+
+  scheduleResponseType:      
+    type: object
+    properties:
+      departureSchedules : departureScheduleType
+    example: !include system-api-types/examples/scheduleResponse.raml
+  
+  departureScheduleType:
+    type: array
+    items: scheduleType
+
+  routeScheduleRequestType: 
+     type: object
+     properties:
+      originLocation: locationdataType
+      destinationLocation: locationdataType
+

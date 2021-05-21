@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+    <http:listener-config name="booking-papi-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="8083" />
+    </http:listener-config>
+    <apikit:config name="booking-papi-config" api="booking-papi.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="189f28c2-715f-4c4d-8f80-53a8a31af473" >
+		<http:request-connection host="localhost" port="8081" />
+	</http:request-config>
+	<http:request-config name="HTTP_Request_configuration1" doc:name="HTTP Request configuration" doc:id="3b12d92b-4985-42ad-acb2-027fbf01c1f6" >
+		<http:request-connection host="localhost" port="8082" />
+	</http:request-config>
+	<sub-flow name="firstCouchService_subflow" doc:id="1a4b9cb0-a1b8-44c5-8fdf-40af7bbd1edd" >
+		<http:request method="GET" doc:name="firstCouchService" doc:id="84fb10d2-a995-4d4f-af61-65558047b00b" config-ref="HTTP_Request_configuration" path="/api/{transportType}/firstcouch/routes" target="fcResponse">
+			<http:uri-params><![CDATA[#[output application/java
+---
+{
+	"transportType" : vars.transportType
+}]]]></http:uri-params>
+		</http:request>
+	</sub-flow>
+	<flow name="booking-papi-main">
+        <http:listener config-ref="booking-papi-httpListenerConfig" path="/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body><![CDATA[#[payload]]]></http:body>
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="booking-papi-config" />
+		<error-handler ref="common_error_handler" />
+            </flow>
+    <flow name="booking-papi-console">
+        <http:listener config-ref="booking-papi-httpListenerConfig" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="booking-papi-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="get:\booking\(transportType)\routes:booking-papi-config">
+        <logger level="INFO" doc:name="Request Recieved" doc:id="60465c60-b688-4e4d-8e5c-5c2ae4bb39fc" message="Recieved Request for routes : Transport Type : #[attributes.uriParams.transportType] and  Departure Location code is #[attributes.queryParams.departureLocationCode] and Company code is #[attributes.queryParams.companyCode]"/>
+		<ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="transportType"><![CDATA[attributes.uriParams.'transportType']]></ee:set-variable>
+				<ee:set-variable variableName="companyCode" ><![CDATA[attributes.queryParams.companyCode]]></ee:set-variable>
+				<ee:set-variable variableName="departureLocationCode" ><![CDATA[attributes.queryParams.departureLocationCode]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+		<logger level="INFO" doc:name="companyCode" doc:id="0a78dec8-12b8-481f-b45d-5cf797e087df" message="company code is #[vars.companyCode]"/>
+		<choice doc:name="Choice" doc:id="621123de-713a-45a9-99a7-00acd57256a6" >
+			<when expression="#[vars.companyCode == 'firstCouch']">
+			<flow-ref doc:name="firstCouchService_subflow" doc:id="e7b09c49-5a2f-4815-b562-049ef4ff2b71" name="firstCouchService_subflow"/>
+				<ee:transform doc:name="Transform Message" doc:id="80be36db-b944-487f-8d8b-abfe310a4a4f" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+var departureLocationCode = vars.departureLocationCode
+---
+
+if (departureLocationCode != null) 
+((vars.fcResponse map (route,index) -> {
+	companyCode: "FirstCouch",
+	originLocation: {
+		locationCode: route.originLocation.locationCode
+	},
+	destinationLocation: {
+		locationCode : route.destinationLocation.locationCode
+	}
+}) filter ($.originLocation.locationCode == departureLocationCode)) 
+
+ else (vars.fcResponse map (route,index) -> {
+	companyCode: "FirstCouch",
+	originLocation: {
+		locationCode: route.originLocation.locationCode
+	},
+	destinationLocation: {
+		locationCode : route.destinationLocation.locationCode
+	}
+}) ]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<ee:cache doc:name="Cache" doc:id="20b3a492-0fdb-4f7c-a5fe-306a538ad293" />
+			</when>
+			<when expression="#[vars.companyCode == 'transnational']">
+			<flow-ref doc:name="transnationalService_subflow" doc:id="4a4f95ac-c16c-40f0-a12c-d3050065425d" name="transnationalService_subflow"/>
+				<ee:transform doc:name="Transform Message" doc:id="e7b64f32-ea60-4881-ab63-46b30331c3fb" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+var departureLocationCode = vars.departureLocationCode
+---
+if (departureLocationCode != null) 
+((vars.transResponse map (route,index) -> {
+	companyCode: "Transnational",
+	originLocation: {
+		locationCode: route.originLocation.locationCode
+	},
+	destinationLocation: {
+		locationCode : route.destinationLocation.locationCode
+	}
+}) filter ($.originLocation.locationCode == departureLocationCode)) 
+
+ else (vars.transResponse map (route,index) -> {
+	companyCode: "Transnational",
+	originLocation: {
+		locationCode: route.originLocation.locationCode
+	},
+	destinationLocation: {
+		locationCode : route.destinationLocation.locationCode
+	}
+}) ]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+				<scatter-gather doc:name="Scatter-Gather" doc:id="c6c67ffb-018f-4bee-bcfc-89fe048f2e22">
+					<route>
+						<flow-ref doc:name="firstCouchService_subflow" doc:id="56399080-6d50-4b61-8880-83217620532d" name="firstCouchService_subflow" />
+			</route>
+					<route >
+						<flow-ref doc:name="transnationalService_subflow" doc:id="ad1aa231-7180-442b-9eb7-c8502e8a0e92" name="transnationalService_subflow"/>
+					</route>
+		</scatter-gather>
+				<ee:transform doc:name="Transform Message" doc:id="ec5bfbcf-fc19-471d-b368-497fd7665dca">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+var departureLocationCode = vars.departureLocationCode
+---
+if (departureLocationCode != null) 
+((vars.fcResponse map (route,index) -> {
+	companyCode: "FirstCouch",
+	originLocation: {
+		locationCode: route.originLocation.locationCode
+	},
+	destinationLocation: {
+		locationCode : route.destinationLocation.locationCode
+	}
+	
+}) ++
+ (vars.transResponse map (route,index) -> {
+	companyCode: "Transnational",
+	originLocation: {
+		locationCode: route.originLocation.locationCode
+	},
+	destinationLocation: {
+		locationCode : route.destinationLocation.locationCode
+	}
+})) filter ($.originLocation.locationCode == departureLocationCode) else 
+
+(vars.fcResponse map (route,index) -> {
+	companyCode: "FirstCouch",
+	originLocation: {
+		locationCode: route.originLocation.locationCode
+	},
+	destinationLocation: {
+		locationCode : route.destinationLocation.locationCode
+	}
+	
+}) ++
+ (vars.transResponse map (route,index) -> {
+	companyCode: "Transnational",
+	originLocation: {
+		locationCode: route.originLocation.locationCode
+	},
+	destinationLocation: {
+		locationCode : route.destinationLocation.locationCode
+	}
+})
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="Result" doc:id="d98ddae5-05a6-4d5b-8c8c-0141c8d0c333" message="Routes result is #[payload]"/>
+		<error-handler ref="common_error_handler" />
+    </flow>
+    <sub-flow name="transnationalService_subflow" doc:id="2be5ace2-d75c-4ffe-b7cf-66d5790b4f8d" >
+		<http:request method="GET" doc:name="TransnationalService" doc:id="cd1bcfaa-a18e-4ec9-8fdb-96c2c08fc1b7" config-ref="HTTP_Request_configuration1" path="/api/{transportType}/transnational/routes" target="transResponse">
+			<http:uri-params><![CDATA[#[output application/java
+---
+{
+	"transportType" : vars.transportType
+}]]]></http:uri-params>
+			<http:query-params><![CDATA[#[output application/java
+---
+{
+	"transportType" : vars.transportType
+}]]]></http:query-params>
+		</http:request>
+	</sub-flow>
+	<flow name="get:\booking\(transportType)\schedules:booking-papi-config">
+        <logger level="INFO" doc:name="Logger" doc:id="76e39b45-cd4e-45a5-9d23-f2ba7bd249ac" message="Schedules request received #[attributes.uriParams.'transportType']"/>
+		<ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="transportType">attributes.uriParams.'transportType'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+         <http:request method="GET" doc:name="FirstCouchService" doc:id="6ff148ae-fa65-4196-9b66-b2037b789dfa" config-ref="HTTP_Request_configuration" path="/api/{transportType}/firstCouch/schedules">
+			<http:uri-params ><![CDATA[#[output application/java
+---
+{
+	"transportType" : vars.transportType
+}]]]></http:uri-params>
+			<http:query-params ><![CDATA[#[output application/java
+---
+{
+	"departureLocationCode" : attributes.queryParams.departureLocation  ,
+	"destinationLocationCode" : attributes.queryParams.destinationLocation
+}]]]></http:query-params>
+		</http:request>
+		<ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    departureSchedules: payload.departureSchedules map(dps,index) -> {
+
+            availableSeats: dps.availableSeats,
+            departureDateTime: dps.departureDateTime,
+            travelRoute:{
+                destinationLocation:{
+                    locationCode: dps.travelRoute.destinationLocation.locationCode
+                }
+            },
+            originLocation: {
+                locationCode: dps.travelRoute.originLocation.locationCode
+            }
+
+
+    }
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="b18f62d5-1b7d-4653-b696-e3ac5e5f2aa0" message="schedules output is #[payload]"/>
+		<error-handler ref="common_error_handler" />
+    </flow>
+</mule>
