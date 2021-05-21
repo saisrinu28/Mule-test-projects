@@ -1,0 +1,13 @@
+http:
+  host: "0.0.0.0"
+  port: "9001"
+  basePath: "booking"
+  path: "/fetchRoutes"
+   
+db:
+  host: "localhost" 
+  port: "3306"
+  user: "root"
+  password: "Sai123"
+  database: "bookingdb"
+  selectQuery: "select * from routes where trans_company='transnational'"
