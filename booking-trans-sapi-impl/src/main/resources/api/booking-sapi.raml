@@ -1,0 +1,55 @@
+#%RAML 1.0
+title: booking-api
+
+uses:
+ lib : exchange_modules/564ae392-e0b6-4b89-8ac4-db2e9514d7e5/booking-system-api-types/3.0.2/booking-system-api-types.raml
+
+
+securitySchemes:
+  basic:
+    description: |
+      This API supports Basic Authentication.
+    type: Basic Authentication
+
+/{transportType}/{transportCompany}/routes:
+  get:
+    is: [lib.ErrorResponses]
+    securedBy: [lib.BasicAuth]
+    responses:
+      200:
+        body:
+          application/json:
+           type:  lib.routeResponseType
+/{transportType}/{transportCompany}/schedules: 
+  get:
+    is: [lib.ErrorResponses]
+    securedBy: [lib.BasicAuth]
+    responses:
+      200:
+        body:
+          application/json:
+            type: lib.scheduleResponseType
+
+           
+                                            
+
+      
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+          
