@@ -1,12 +1,18 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<mule xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit-soap="http://www.mulesoft.org/schema/mule/apikit-soap" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/apikit-soap http://www.mulesoft.org/schema/mule/apikit-soap/current/mule-apikit-soap.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
-http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+<mule xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:spring="http://www.mulesoft.org/schema/mule/spring" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit-soap="http://www.mulesoft.org/schema/mule/apikit-soap" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/apikit-soap http://www.mulesoft.org/schema/mule/apikit-soap/current/mule-apikit-soap.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/spring http://www.mulesoft.org/schema/mule/spring/current/mule-spring.xsd
+http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd">
     <http:listener-config name="api-httpListenerConfig" basePath="${http.basePath}">
         <http:listener-connection host="${http.host}" port="${http.port}"/>
     </http:listener-config>
     <apikit-soap:config httpStatusVarName="httpStatus" name="soapkit-config" port="BookingsSOAP" service="Bookings" wsdlLocation="transNationalService.wsdl"/>
-    <db:config name="Database_Config" doc:name="Database Config" doc:id="09c0e725-36e9-4e77-8f7e-0a0272185081" >
+    <!-- <db:config name="Database_Config" doc:name="Database Config" doc:id="09c0e725-36e9-4e77-8f7e-0a0272185081" >
 		<db:my-sql-connection host="${db.host}" port="${db.port}" user="${db.user}" password="${db.password}" database="${db.database}" />
+	</db:config> -->
+	<spring:config name="Spring_Config" doc:name="Spring Config" doc:id="1761142d-3f23-488a-9317-e6bc931262d6" files="springbeans.xml" />
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="57953dab-6204-4c1f-b6a0-093b69dfed47" >
+		<db:generic-connection url="jdbc:derby:memory:demodb" driverClassName="org.apache.derby.jdbc.EmbeddedDriver" />
 	</db:config>
 	<configuration-properties doc:name="Configuration properties" doc:id="0f7b3deb-fa1c-41e4-ae0a-c71d6449b4e8" file="properties.yaml" />
 	<flow name="api-main">
@@ -66,7 +72,7 @@ output application/json
 
 output application/json
 ---
- if(vars.routeType.routeType !=null) {  	query : "select * from transnational_routes where route_type = '"++ vars.routeType.routeType ++"'" } else 	{ 		query : "select * from transnational_routes"	}]]></ee:set-payload>
+ if(vars.routeType.routeType !=null) {  	query : "select * from transnationalDB.transnational_routes where route_type = '"++ vars.routeType.routeType ++"'" } else 	{ 		query : "select * from transnationalDB.transnational_routes"	}]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
 		<logger level="INFO" doc:name="Logger" doc:id="2d8e9750-8e2a-4772-ba0f-96e4e9f41ec7" message="the query  to transnational is #[payload.query]"/>
