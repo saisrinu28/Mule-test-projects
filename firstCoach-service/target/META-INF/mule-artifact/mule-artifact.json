@@ -1,0 +1,31 @@
+{
+  "configs": [
+    "derby-db-demo.xml"
+  ],
+  "secureProperties": [],
+  "redeploymentEnabled": true,
+  "name": "com.mycompany:derby-db-demo:1.0.0-SNAPSHOT",
+  "minMuleVersion": "4.3.0",
+  "requiredProduct": "MULE_EE",
+  "classLoaderModelLoaderDescriptor": {
+    "id": "mule",
+    "attributes": {
+      "exportedPackages": [],
+      "exportedResources": [
+        "create-db.sql",
+        "springbeans.xml",
+        " insert-data.sql",
+        "log4j2.xml",
+        "derby-db-demo.xml",
+        "insertData.sql",
+        "routeProcess.dwl",
+        "schedulesProcess.dwl",
+        "properties.yaml"
+      ]
+    }
+  },
+  "bundleDescriptorLoader": {
+    "id": "mule",
+    "attributes": {}
+  }
+}
