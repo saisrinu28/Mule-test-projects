@@ -1,19 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:os="http://www.mulesoft.org/schema/mule/os"
-	xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
-	xmlns:http="http://www.mulesoft.org/schema/mule/http"
-	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+<mule xmlns:spring="http://www.mulesoft.org/schema/mule/spring"
+	xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
 http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
-http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/spring http://www.mulesoft.org/schema/mule/spring/current/mule-spring.xsd">
 	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="887e0d88-f567-4481-aefe-2f7c2ef0d158">
 		<http:listener-connection host="${http.host}" port="${http.port}"  />
 	</http:listener-config>
 	<configuration-properties doc:name="Configuration properties" doc:id="9571bfe0-b4fe-47dc-9533-bd60100a4e09" file="properties.yaml" />
-	<db:config name="Database_Config" doc:name="Database Config" doc:id="28a20619-bcfd-4ffd-8043-315476fb4ba5" >
+	<!-- <db:config name="Database_Config" doc:name="Database Config" doc:id="28a20619-bcfd-4ffd-8043-315476fb4ba5" >
 		<db:my-sql-connection host="${db.host}" port="${db.port}" user="${db.user}" password="${db.password}" database="${db.database}"/>
+	</db:config> -->
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="6dcee21c-6b89-4390-94a3-6df6ba519270" >
+		<db:generic-connection url="jdbc:derby:memory:demodb" driverClassName="org.apache.derby.jdbc.EmbeddedDriver" />
 	</db:config>
 	<flow name="landRoutesFlow" doc:id="800606d6-4729-4db7-80b3-ccdacf75cbd9" >
 		<http:listener doc:name="Listener" doc:id="514e2b51-c924-4ce0-b670-58166c05d223" config-ref="HTTP_Listener_config" path="${http.path}"/>
