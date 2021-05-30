@@ -102,7 +102,6 @@ if (departureLocationCode != null)
 }) ]]></ee:set-payload>
 					</ee:message>
 				</ee:transform>
-				<ee:cache doc:name="Cache" doc:id="20b3a492-0fdb-4f7c-a5fe-306a538ad293" />
 			</when>
 			<when expression="#[vars.companyCode == 'transnational']">
 			<flow-ref doc:name="transnationalService_subflow" doc:id="4a4f95ac-c16c-40f0-a12c-d3050065425d" name="transnationalService_subflow"/>
