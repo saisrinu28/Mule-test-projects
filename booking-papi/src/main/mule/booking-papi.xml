@@ -1,24 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
-http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
     <http:listener-config name="booking-papi-httpListenerConfig">
-        <http:listener-connection host="0.0.0.0" port="8083" />
+        <http:listener-connection host="${http.PAPIHost}" port="${http.PAPIPort}" />
     </http:listener-config>
     <apikit:config name="booking-papi-config" api="booking-papi.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
-    <http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="189f28c2-715f-4c4d-8f80-53a8a31af473" >
-		<http:request-connection host="localhost" port="8081" />
+    <http:request-config name="firstCouchRequestconfiguration" doc:name="HTTP Request configuration" doc:id="189f28c2-715f-4c4d-8f80-53a8a31af473" >
+		<http:request-connection host="${http.firstCouchSAPIHost}" port="${http.firstCouchSAPIPort}" />
 	</http:request-config>
-	<http:request-config name="HTTP_Request_configuration1" doc:name="HTTP Request configuration" doc:id="3b12d92b-4985-42ad-acb2-027fbf01c1f6" >
-		<http:request-connection host="localhost" port="8082" />
+	<http:request-config name="transnationalconfiguration" doc:name="HTTP Request configuration" doc:id="3b12d92b-4985-42ad-acb2-027fbf01c1f6" >
+		<http:request-connection host="${http.transnationalSAPIHost}" port="${http.transnationalSAPIPort}" />
 	</http:request-config>
+	<ee:object-store-caching-strategy name="Caching_Strategy" doc:name="Caching Strategy" doc:id="b6c96798-ef9e-474e-92c4-3bd41dd53f37" >
+		<os:private-object-store alias="cacheStore" persistent="false" maxEntries="${cacheStore.maxEntries}" entryTtl="${cacheStore.entryTtl}" entryTtlUnit="${cacheStore.entryTtlUnit}" expirationInterval="${cacheStore.expirationInterval}" />
+	</ee:object-store-caching-strategy>
+	<configuration-properties doc:name="Configuration properties" doc:id="ca749a08-92ca-4381-9fa5-d73aa111cd8a" file="dev-properties.yaml" />
 	<sub-flow name="firstCouchService_subflow" doc:id="1a4b9cb0-a1b8-44c5-8fdf-40af7bbd1edd" >
-		<http:request method="GET" doc:name="firstCouchService" doc:id="84fb10d2-a995-4d4f-af61-65558047b00b" config-ref="HTTP_Request_configuration" path="/api/{transportType}/firstcouch/routes" target="fcResponse">
+		
+			<http:request method="GET" doc:name="firstCouchService" doc:id="84fb10d2-a995-4d4f-af61-65558047b00b" config-ref="firstCouchRequestconfiguration" path="${http.firstCouchSAPIRoutesPath}" target="fcResponse">
 			<http:uri-params><![CDATA[#[output application/java
 ---
 {
 	"transportType" : vars.transportType
 }]]]></http:uri-params>
 		</http:request>
+		
 	</sub-flow>
 	<flow name="booking-papi-main">
         <http:listener config-ref="booking-papi-httpListenerConfig" path="/*">
@@ -64,18 +71,18 @@ output application/json
         <logger level="INFO" doc:name="Request Recieved" doc:id="60465c60-b688-4e4d-8e5c-5c2ae4bb39fc" message="Recieved Request for routes : Transport Type : #[attributes.uriParams.transportType] and  Departure Location code is #[attributes.queryParams.departureLocationCode] and Company code is #[attributes.queryParams.companyCode]"/>
 		<ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
             <ee:variables>
-                <ee:set-variable variableName="transportType"><![CDATA[attributes.uriParams.'transportType']]></ee:set-variable>
-				<ee:set-variable variableName="companyCode" ><![CDATA[attributes.queryParams.companyCode]]></ee:set-variable>
+                <ee:set-variable variableName="transportType"><![CDATA[lower(attributes.uriParams.'transportType')]]></ee:set-variable>
+				<ee:set-variable variableName="companyCode" ><![CDATA[lower(attributes.queryParams.companyCode)]]></ee:set-variable>
 				<ee:set-variable variableName="departureLocationCode" ><![CDATA[attributes.queryParams.departureLocationCode]]></ee:set-variable>
             </ee:variables>
         </ee:transform>
 		<logger level="INFO" doc:name="companyCode" doc:id="0a78dec8-12b8-481f-b45d-5cf797e087df" message="company code is #[vars.companyCode]"/>
 		<choice doc:name="Choice" doc:id="621123de-713a-45a9-99a7-00acd57256a6" >
-			<when expression="#[vars.companyCode == 'firstCouch']">
+			<when expression="#[lower(vars.companyCode) == '${transportCompanyName.firstCouch}']">
 			<flow-ref doc:name="firstCouchService_subflow" doc:id="e7b09c49-5a2f-4815-b562-049ef4ff2b71" name="firstCouchService_subflow"/>
-				<ee:transform doc:name="Transform Message" doc:id="80be36db-b944-487f-8d8b-abfe310a4a4f" >
-					<ee:message >
-						<ee:set-payload ><![CDATA[%dw 2.0
+				<ee:transform doc:name="Transform Message" doc:id="80be36db-b944-487f-8d8b-abfe310a4a4f">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
 output application/json
 var departureLocationCode = vars.departureLocationCode
 ---
@@ -198,7 +205,8 @@ if (departureLocationCode != null)
 		<error-handler ref="common_error_handler" />
     </flow>
     <sub-flow name="transnationalService_subflow" doc:id="2be5ace2-d75c-4ffe-b7cf-66d5790b4f8d" >
-		<http:request method="GET" doc:name="TransnationalService" doc:id="cd1bcfaa-a18e-4ec9-8fdb-96c2c08fc1b7" config-ref="HTTP_Request_configuration1" path="/api/{transportType}/transnational/routes" target="transResponse">
+		
+			<http:request method="GET" doc:name="TransnationalService" doc:id="cd1bcfaa-a18e-4ec9-8fdb-96c2c08fc1b7" config-ref="transnationalconfiguration" path="${http.transnatioanSAPIPath}" target="transResponse">
 			<http:uri-params><![CDATA[#[output application/java
 ---
 {
@@ -210,6 +218,7 @@ if (departureLocationCode != null)
 	"transportType" : vars.transportType
 }]]]></http:query-params>
 		</http:request>
+		
 	</sub-flow>
 	<flow name="get:\booking\(transportType)\schedules:booking-papi-config">
         <logger level="INFO" doc:name="Logger" doc:id="76e39b45-cd4e-45a5-9d23-f2ba7bd249ac" message="Schedules request received #[attributes.uriParams.'transportType']"/>
@@ -218,19 +227,21 @@ if (departureLocationCode != null)
                 <ee:set-variable variableName="transportType">attributes.uriParams.'transportType'</ee:set-variable>
             </ee:variables>
         </ee:transform>
-         <http:request method="GET" doc:name="FirstCouchService" doc:id="6ff148ae-fa65-4196-9b66-b2037b789dfa" config-ref="HTTP_Request_configuration" path="/api/{transportType}/firstCouch/schedules">
-			<http:uri-params ><![CDATA[#[output application/java
+        
+			<http:request method="GET" doc:name="FirstCouchService" doc:id="6ff148ae-fa65-4196-9b66-b2037b789dfa" config-ref="firstCouchRequestconfiguration" path="${http.firstCouchSAPISchedulesPath}">
+			<http:uri-params><![CDATA[#[output application/java
 ---
 {
 	"transportType" : vars.transportType
 }]]]></http:uri-params>
-			<http:query-params ><![CDATA[#[output application/java
+			<http:query-params><![CDATA[#[output application/java
 ---
 {
 	"departureLocationCode" : attributes.queryParams.departureLocation  ,
 	"destinationLocationCode" : attributes.queryParams.destinationLocation
 }]]]></http:query-params>
 		</http:request>
+		
 		<ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="
 http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
