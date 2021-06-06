@@ -132,8 +132,8 @@ output application/json
     <flow name="get:\(transportType)\(transportCompany)\routes:booking-sapi-config">
         <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
             <ee:variables>
-                <ee:set-variable variableName="transportType">attributes.uriParams.'transportType'</ee:set-variable>
-                <ee:set-variable variableName="transportCompany">attributes.uriParams.'transportCompany'</ee:set-variable>
+                <ee:set-variable variableName="transportType"><![CDATA[lower(attributes.uriParams.'transportType')]]></ee:set-variable>
+                <ee:set-variable variableName="transportCompany"><![CDATA[attributes.uriParams.'transportCompany']]></ee:set-variable>
             </ee:variables>
         </ee:transform>
         <http:request method="GET" doc:name="firstCouchCall" doc:id="0d49f120-a9ab-460e-9449-6d8e47e471fe" config-ref="HTTP_Request_configuration" path="/fetchRoutes" >
@@ -165,8 +165,8 @@ payload map (route,index) -> {
     <flow name="get:\(transportType)\(transportCompany)\schedules:booking-sapi-config">
         <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
             <ee:variables>
-                <ee:set-variable variableName="transportType">attributes.uriParams.'transportType'</ee:set-variable>
-                <ee:set-variable variableName="transportCompany">attributes.uriParams.'transportCompany'</ee:set-variable>
+                <ee:set-variable variableName="transportType"><![CDATA[lower(attributes.uriParams.'transportType')]]></ee:set-variable>
+                <ee:set-variable variableName="transportCompany"><![CDATA[attributes.uriParams.'transportCompany']]></ee:set-variable>
             </ee:variables>
         </ee:transform>
         <ee:transform doc:name="Transform Message" doc:id="b23be7c9-c11f-414c-9b2b-aca920d846ba" >
