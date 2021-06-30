@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="887e0d88-f567-4481-aefe-2f7c2ef0d158">
+		<http:listener-connection host="${http.host}" port="${http.port}"  />
+	</http:listener-config>
+	<configuration-properties doc:name="Configuration properties" doc:id="9571bfe0-b4fe-47dc-9533-bd60100a4e09" file="properties.yaml" />
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="28a20619-bcfd-4ffd-8043-315476fb4ba5" >
+		<db:my-sql-connection host="${db.host}" port="${db.port}" user="${db.user}" password="${db.password}" database="${db.database}"/>
+	</db:config>
+	<flow name="landRoutesFlow" doc:id="800606d6-4729-4db7-80b3-ccdacf75cbd9" >
+		<http:listener doc:name="Listener" doc:id="514e2b51-c924-4ce0-b670-58166c05d223" config-ref="HTTP_Listener_config" path="${http.path}"/>
+		<ee:transform doc:name="Transform Message" doc:id="4a767858-0462-423a-a30a-bf200405d9fa" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+
+ if(attributes.queryParams.transportType !=null) { 
+ 	query : "select * from firstcouch_routes where route_type = '"++ attributes.queryParams.transportType ++"'"
+ } else 
+	{ 
+		query : "select * from firstcouch_routes"
+	}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="02d1c090-a33a-465b-8dac-209e355c67c5" message="transport type is #[attributes.queryParams.transportType]"/>
+		<db:select doc:name="Select" doc:id="c24243a4-c2ed-412a-8d11-4ffe337b0f6b" config-ref="Database_Config">
+			       
+			<error-mapping sourceType="DB:CONNECTIVITY" targetType="FC:CONNECTIVITY" />
+			<error-mapping targetType="FC:PROCESSING" sourceType="EXPRESSION"/>
+			<db:sql><![CDATA[#[payload.query]]]></db:sql>
+		
+</db:select>
+		<ee:transform doc:id="db4e7cce-56d3-443d-b849-fccadf999fa1">
+            <ee:message>
+				<ee:set-payload resource="routeProcess.dwl" />
+            </ee:message>
+        </ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="3eb23edb-0bc0-4577-b036-e1d0842d508f" message="final output of firstcouch service ::::::::::::::::::::#[payload]"/>
+		<error-handler doc:id="a6ec7185-e9db-49da-9ebb-fd9eb177a498">
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="96192567-0e56-4f20-a350-745bbf9aaaa7" type="FC:CONNECTIVITY">
+				<set-payload value='#["&lt;error&gt;
+	&lt;code&gt; FC001 &lt;/code&gt;
+	&lt;description&gt; Internal error&lt;/description&gt;
+&lt;/error&gt;"]' doc:name="Set Payload" doc:id="33af717e-13f2-4609-9f67-6089608f1761" />
+			</on-error-continue>
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="5aa4a054-eaf6-4845-958f-c432bcde8020" type="FC:PROCESSING">
+				<set-payload value='#["&lt;error&gt;
+	&lt;code&gt; FC002 &lt;/code&gt;
+	&lt;description&gt; Processing error&lt;/description&gt;
+&lt;/error&gt;"]' doc:name="Set Payload" doc:id="555243b1-7a85-48b5-893a-6cf396ec68ef" />
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<flow name="fetchSchedulesFlow" doc:id="427edd00-bbd2-4c3e-854d-8d39edbc9d85" >
+		<http:listener doc:name="Listener" doc:id="3de44610-3aa3-42d6-a402-7f893f142d8c" config-ref="HTTP_Listener_config" path="${http.schdulesPath}"/>
+		<db:select doc:name="Select" doc:id="2a561f86-7f9d-472b-9102-47a0cddf30e7" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from firstcouch_schedules where origin= :originCity and destination= :destinationCity]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	originCity : payload.originLocation.locationCode,
+	destinationCity: payload.destinationLocation.locationCode
+}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="d71ce67c-6e35-48b1-8b3f-42c49d59437e" >
+			<ee:message >
+				<ee:set-payload resource="schedulesProcess.dwl" />
+			
+</ee:message>
+		</ee:transform>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="495c236a-4120-44b3-ae9e-95a14cda9278" >
+				<set-payload value='"ignore"' doc:name="Set Payload" doc:id="c6c919c5-9b20-465b-9657-6bc24309798d" />
+			</on-error-continue>
+		</error-handler>
+	
+</flow>
+	
+</mule>

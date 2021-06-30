@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+	<error-handler name="common_error_handler" doc:id="e9ab0078-2229-4c8d-8198-59cc1d357019" >
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="98ecd4d2-652f-4605-8889-f4b49ae15a94" type="HTTP:BAD_REQUEST">
+				<set-variable value="400" doc:name="Set Variable" doc:id="f2ecc6bb-bfbc-4997-baa9-1343166a21ae" variableName="httpStatus"/>
+				<ee:transform doc:name="Transform Message" doc:id="551e99d7-1292-4bf6-bcf2-45e977cec890" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "errorCode": vars.httpStatus,
+  "errorMessage": "Invalid request message",
+  "transactionId": "dd960082-abbf-47c2-8c65-f18eeb35848b",
+  "timeStamp": now()
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-continue>
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="5bed136e-041c-4277-8d2c-7f182f377db4" type="HTTP:NOT_FOUND">
+				<set-variable value="404" doc:name="Set Variable" doc:id="ea9d9f5c-44e0-4c55-90f5-4cfb8bbaa3ee" variableName="httpStatus"/>
+				<ee:transform doc:name="Transform Message" doc:id="80c66bad-97fa-4107-90c9-764ecbb432a9" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "errorCode": vars.httpStatus,
+  "errorMessage": "Requested resource was not found",
+  "transactionId": "dd960082-abbf-47c2-8c65-f18eeb35848b",
+  "timeStamp": now()
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-continue>
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="50db4e2a-5660-4b4f-8490-c8bff6afd1c5" type="HTTP:METHOD_NOT_ALLOWED">
+				<set-variable value="405" doc:name="Set Variable" doc:id="05bbb127-0574-476b-871c-e9d1e74b7c6d" variableName="httpStatus"/>
+				<ee:transform doc:name="Transform Message" doc:id="6305622b-a62e-41ff-b1f0-535d0c465a1f" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "errorCode": vars.httpStatus,
+  "errorMessage": "The target resource does not support the requested method",
+  "transactionId": "dd960082-abbf-47c2-8c65-f18eeb35848b",
+  "timeStamp": now()
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-continue>
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="7056afc2-4cc2-4e9e-85fe-0b1a408a0e21" type="HTTP:NOT_ACCEPTABLE">
+				<set-variable value="406" doc:name="Set Variable" doc:id="b0c65dac-0a2b-4f6d-9b1e-5057cf07a40f" variableName="httpStatus"/>
+				<ee:transform doc:name="Transform Message" doc:id="148ecc92-1313-46ad-ac54-4a770f338fc9" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{  
+  "errorCode": vars.httpStatus,
+  "errorMessage": "The requested resource cannot generate acceptable content according to the Accept headers sent in the request.",
+  "transactionId": "dd960082-abbf-47c2-8c65-f18eeb35848b",
+  "timeStamp": now()
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-continue>
+		<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="24891b25-9ea7-464b-a2d4-5316db6cb432" type="HTTP:SERVICE_UNAVAILABLE">
+			<set-variable value="503" doc:name="Set Variable" doc:id="7d8e86c9-464b-4865-8315-5283094b25af" variableName="httpStatus" />
+			<ee:transform doc:name="Transform Message" doc:id="446c7795-93e6-46c2-822a-ab51c0f9213c">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+  "errorCode": vars.httpStatus,
+  "errorMessage": "Not Implemented",
+  "transactionId": "dd960082-abbf-47c2-8c65-f18eeb35848b",
+  "timeStamp": now()
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+		</on-error-continue>
+		<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="7b740d7e-6fe9-4138-a484-b8c48044a066" type="HTTP:INTERNAL_SERVER_ERROR">
+			<set-variable value="500" doc:name="Set Variable" doc:id="bd944f24-3d2f-4eec-8fdf-e8023891069c" variableName="httpStatus" />
+			<ee:transform doc:name="Transform Message" doc:id="c1d125f2-ee00-45fb-99a0-cbcd309da9a6">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "errorCode": vars.httpStatus,
+  "errorMessage": "The server was unable to process the request due to an internal error",
+  "transactionId": "dd960082-abbf-47c2-8c65-f18eeb35848b",
+  "timeStamp": now()
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+		</on-error-continue>
+		<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="3bf64e8f-3cfc-47ae-b5ce-2eaae464fd07" type="HTTP:UNSUPPORTED_MEDIA_TYPE">
+			<set-variable value="415" doc:name="Set Variable" doc:id="286ef2bd-a207-408f-ae9f-5e4e99f5d2d2" variableName="httpStatus" />
+			<ee:transform doc:name="Transform Message" doc:id="208bba3b-362a-4f5e-81a9-c8de1aaaf199">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "errorCode": vars.httpStatus,
+  "errorMessage": "The server is refusing to the request because it is not in a format supported by the target resource.",
+  "transactionId": "dd960082-abbf-47c2-8c65-f18eeb35848b",
+  "timeStamp": now()
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+		</on-error-continue>
+		<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="943c9115-d1b6-4fc0-b983-47315d1838af" type="ANY">
+			<set-variable value="500" doc:name="Set Variable" doc:id="6aca9b79-88cb-42cc-82b1-6699737096fc" variableName="httpStatus"/>
+			<ee:transform doc:name="Transform Message" doc:id="6094196d-e2a3-4d98-9cb1-1303cc0c83ea" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "errorCode": vars.httpStatus,
+  "errorMessage": "Internal error occured, Please contact adminstrator.",
+  "transactionId": "dd960082-abbf-47c2-8c65-f18eeb35848b",
+  "timeStamp": now()
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+		</on-error-continue>
+		
+		
+</error-handler>
+	
+</mule>

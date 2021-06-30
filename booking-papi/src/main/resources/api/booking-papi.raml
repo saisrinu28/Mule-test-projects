@@ -1,0 +1,27 @@
+#%RAML 1.0
+title: booking-papi
+
+uses:
+ lib : exchange_modules/564ae392-e0b6-4b89-8ac4-db2e9514d7e5/booking-process-api-types/3.0.3/booking-process-api-types.raml
+
+/booking/{transportType}/routes:
+  get:
+    is: [lib.ErrorResponses]
+    securedBy: [lib.BasicAuth]
+    responses:
+      200:
+        body:
+          application/json:
+            type: lib.routeResponseType
+            
+             
+
+/booking/{transportType}/schedules:
+  get:
+    is: [lib.ErrorResponses]
+    securedBy: [lib.BasicAuth]
+    responses:
+      200:
+        body:
+          application/json:
+            type: lib.scheduleResponseType

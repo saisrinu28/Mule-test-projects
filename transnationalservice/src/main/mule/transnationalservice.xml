@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<mule xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:spring="http://www.mulesoft.org/schema/mule/spring" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit-soap="http://www.mulesoft.org/schema/mule/apikit-soap" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/apikit-soap http://www.mulesoft.org/schema/mule/apikit-soap/current/mule-apikit-soap.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/spring http://www.mulesoft.org/schema/mule/spring/current/mule-spring.xsd
+http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd">
+    <http:listener-config name="api-httpListenerConfig" basePath="${http.basePath}">
+        <http:listener-connection host="${http.host}" port="${http.port}"/>
+    </http:listener-config>
+    <apikit-soap:config httpStatusVarName="httpStatus" name="soapkit-config" port="BookingsSOAP" service="Bookings" wsdlLocation="transNationalService.wsdl"/>
+    <!-- <db:config name="Database_Config" doc:name="Database Config" doc:id="09c0e725-36e9-4e77-8f7e-0a0272185081" >
+		<db:my-sql-connection host="${db.host}" port="${db.port}" user="${db.user}" password="${db.password}" database="${db.database}" />
+	</db:config> -->
+	<spring:config name="Spring_Config" doc:name="Spring Config" doc:id="1761142d-3f23-488a-9317-e6bc931262d6" files="springbeans.xml" />
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="57953dab-6204-4c1f-b6a0-093b69dfed47" >
+		<db:generic-connection url="jdbc:derby:memory:demodb" driverClassName="org.apache.derby.jdbc.EmbeddedDriver" />
+	</db:config>
+	<configuration-properties doc:name="Configuration properties" doc:id="0f7b3deb-fa1c-41e4-ae0a-c71d6449b4e8" file="properties.yaml" />
+	<flow name="api-main">
+        <http:listener config-ref="api-httpListenerConfig" path="${http.path}">
+            <http:response statusCode="#[attributes.protocolHeaders.httpStatus default 200]">
+                <http:headers><![CDATA[#[attributes.protocolHeaders default {}]]]></http:headers>
+            </http:response>
+            <http:error-response statusCode="#[attributes.protocolHeaders.httpStatus default 500]">
+                <http:body><![CDATA[#[payload]]]></http:body>
+                <http:headers><![CDATA[#[attributes.protocolHeaders default {}]]]></http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit-soap:router config-ref="soapkit-config">
+            <error-mapping sourceType="APIKIT-SOAP:ROUTER" targetType="TRANS:DB-CONNECT" />
+			<error-mapping sourceType="EXPRESSION" targetType="TRANS:PROCESSING-ROUTES" />
+			<apikit-soap:attributes><![CDATA[#[%dw 2.0
+              output application/java
+              ---
+              {
+                  headers: attributes.headers,
+                  method: attributes.method,
+                  queryString: attributes.queryString
+            }]]]></apikit-soap:attributes>
+        </apikit-soap:router>
+		<error-handler>
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="234c0a69-9027-4274-bd5d-50f287112d7e" type="TRANS:DB-CONNECT">
+				<set-payload value='#["&lt;error&gt;
+	&lt;code&gt; TRANS001 &lt;/code&gt;
+	&lt;description&gt; Internal error&lt;/description&gt;
+&lt;/error&gt;"]' doc:name="Set Payload" doc:id="410b7bc5-ed16-4ebf-a0b3-1f82ecbcb47f" mimeType="application/xml"/>
+			</on-error-continue>
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="f35cc231-73f3-43b5-9b0a-ecf905baabaa" type="TRANS:PROCESSING-ROUTES">
+				<set-payload value='#["&lt;error&gt;
+	&lt;code&gt; TRANS002 &lt;/code&gt;
+	&lt;description&gt; Route Processing error&lt;/description&gt;
+&lt;/error&gt;"]' doc:name="Set Payload" doc:id="299de8eb-0543-4475-bcbd-8769b90fb889" />
+			</on-error-continue>
+		</error-handler>
+    </flow>
+    <flow name="getRoutes:\soapkit-config">
+		<ee:transform doc:name="Transform Message" doc:id="3a241218-effe-4401-8936-dd035bfffc68" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="routeType" ><![CDATA[%dw 2.0
+ns ns0 http://www.example.org/Bookings/
+output application/json
+---
+{
+	routeType: payload.body.ns0#getRoutes.in
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="Transform Message" doc:id="84985871-137e-4c1a-bb7a-ce126a3547a4">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0ns ns0 http://www.example.org/Bookings/
+
+output application/json
+---
+ if(vars.routeType.routeType !=null) {  	query : "select * from transnationalDB.transnational_routes where route_type = '"++ vars.routeType.routeType ++"'" } else 	{ 		query : "select * from transnationalDB.transnational_routes"	}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="2d8e9750-8e2a-4772-ba0f-96e4e9f41ec7" message="the query  to transnational is #[payload.query]"/>
+		<db:select doc:name="Select" doc:id="76b3d145-cde2-4d76-b384-c4b6fd2550ad" config-ref="Database_Config">
+			       
+			<db:sql><![CDATA[#[payload.query]]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="262d05a0-42c2-4e8f-992f-e86b397ada68" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"ROUTELIST" : {
+			ROUTELIST: payload map (route, index) -> {
+				ROUTEINFO: {
+					ORIGIN: route.origin,
+					DESTINATION: route.destination
+				}
+			}
+			
+		}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:id="d2b7d1bc-ecfb-4394-a674-990300f6db2e">
+            <ee:message>
+				<ee:set-payload resource="routeProcess.dwl" />
+            </ee:message>
+        </ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="33458a1f-089c-4899-9474-4d69ffb17169" message="Final payload after transformation #[payload]"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="86382967-dc47-430d-a843-1c11b222e727" when="#[error.errorType.namespace == 'DB']">
+				<logger level="ERROR" doc:name="Logger" doc:id="98b23e11-7d78-4e8f-a4d5-90984728666b" message="Unable to connect to database"/>
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="fb135e3c-92df-4266-bfec-02f35b548e6a" type="EXPRESSION">
+				<logger level="ERROR" doc:name="Logger" doc:id="b2396be1-9e81-497a-8d04-eabbaf62da40" message="Error occured while processing routes" />
+			</on-error-propagate>
+		</error-handler>
+    </flow>
+</mule>
